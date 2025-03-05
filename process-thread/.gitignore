@@ -1,0 +1,49 @@
+# Archivos de construcción y carpetas
+target/
+build/
+
+# Archivos de configuración específicos de IDEs
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+nbactions.xml
+nb-configuration.xml
+
+# Archivos de configuración específicos de Maven y Gradle
+# Maven
+log/
+logs/
+*.log
+.mvn/
+*.maven-repo
+
+# Gradle
+.gradle/
+build/
+out/
+
+# Archivos de sistema específicos
+.DS_Store
+Thumbs.db
+
+# Archivos de configuraciones de sistema operativo y editor de texto
+*.swp
+*~
+*.tmp
+
+# Archivos de configuración del entorno
+.env
+.env.local
