@@ -10,7 +10,7 @@ public class Main {
 
         Logger logger = new Logger();
         ClientRepository repository = new InMemoryClientRepository();
-        int port = 8080;
+        int port = 3000;
 
 
         ServerService serverService = ServerService.getInstance(port, repository, logger);

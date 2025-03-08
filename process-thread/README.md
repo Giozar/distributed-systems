@@ -126,6 +126,34 @@ private ServerService(int port, ClientRepository clientRepository, Logger logger
 2. Ejecute la clase `Main`
 3. Conéctese al servidor usando un cliente TCP en el puerto 8080
 
+
+## Ejecutar aplicación usando Docker
+```bash
+
+# Asegúrate de estar en la raíz del proyecto
+cd ~/process-thread
+
+# Construir la imagen
+docker build -t mi-socket-app .
+
+# Crear la red si no existe
+docker network create app-network
+
+# Ejecutar el contenedor
+docker run -d \
+  --name mi-java-app \
+  --network app-network \
+  -p 3000:3000 \
+  mi-socket-app
+
+```
+## Ejecutando un script
+```bash
+
+   # Ejecuta el siguiente comando
+   ./build-and-run.sh
+```
+
 ## Futuras Mejoras
 
 - Implementación de protocolos de comunicación
