@@ -1,16 +1,15 @@
 package com.giozar04;
 
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
 import com.giozar04.databases.infrastructure.MySQLDatabaseConnection;
 import com.giozar04.servers.application.services.ServerService;
-import com.giozar04.servers.domain.exceptions.ServerOperationException;
 import com.giozar04.shared.logging.CustomLogger;
 import com.giozar04.transactions.application.services.TransactionService;
 import com.giozar04.transactions.domain.interfaces.TransactionRepositoryInterface;
+import com.giozar04.transactions.infrastructure.handlers.TransactionHandlers;
 import com.giozar04.transactions.infrastructure.repositories.TransactionRepositoryMySQL;
 
 /**
@@ -26,11 +25,11 @@ public class Main {
     private static final int SERVER_PORT = 8080;
     
     // Configuración de la base de datos
-    private static final String DATABASE_HOST = "127.0.0.1";
+    private static final String DATABASE_HOST = "localhost";
     private static final String DATABASE_PORT = "3306";
-    private static final String DATABASE_NAME = "finanzas";
-    private static final String DATABASE_USERNAME = "giovanni";
-    private static final String DATABASE_PASSWORD = "finanzas123";
+    private static final String DATABASE_NAME = "transactions";
+    private static final String DATABASE_USERNAME = "XXXX";
+    private static final String DATABASE_PASSWORD = "XXXX";
 
     /**
      * Método principal para iniciar la aplicación.
@@ -77,7 +76,7 @@ public class Main {
             // Mantener el servidor en ejecución
             keepServerRunning(server);
             
-        } catch (ServerOperationException | IOException e) {
+        } catch (Exception e) {
             LOGGER.error("Error al iniciar la aplicación", e);
             
             // Intento de limpieza en caso de error
@@ -85,7 +84,7 @@ public class Main {
                 if (server != null && server.isServerRunning()) {
                     server.stopServer();
                 }
-            } catch (ServerOperationException ex) {
+            } catch (Exception ex) {
                 LOGGER.error("Error al detener el servidor durante manejo de excepciones", ex);
             }
             
@@ -100,18 +99,33 @@ public class Main {
      * @param transactionService El servicio de transacciones para manejar operaciones relacionadas.
      */
     private static void setupServerHandlers(ServerService server, TransactionService transactionService) {
-        // Aquí configurarías los manejadores de mensajes específicos
-        // Ejemplo: registrar callbacks, asignar controladores, etc.
+        // Registrar manejadores para operaciones de transacciones
+        server.registerHandler(
+            TransactionHandlers.MessageTypes.CREATE_TRANSACTION,
+            TransactionHandlers.createTransactionHandler(transactionService)
+        );
         
-        // Por ejemplo, podrías tener algo como:
-        // server.registerHandler("CREATE_TRANSACTION", (clientSocket, message) -> {
-        //     // Lógica para manejar creación de transacciones
-        //     Transaction transaction = parseTransaction(message);
-        //     Transaction created = transactionService.createTransaction(transaction);
-        //     sendResponse(clientSocket, created);
-        // });
+        server.registerHandler(
+            TransactionHandlers.MessageTypes.GET_TRANSACTION,
+            TransactionHandlers.getTransactionHandler(transactionService)
+        );
         
-        LOGGER.info("Manejadores del servidor configurados");
+        server.registerHandler(
+            TransactionHandlers.MessageTypes.UPDATE_TRANSACTION,
+            TransactionHandlers.updateTransactionHandler(transactionService)
+        );
+        
+        server.registerHandler(
+            TransactionHandlers.MessageTypes.DELETE_TRANSACTION,
+            TransactionHandlers.deleteTransactionHandler(transactionService)
+        );
+        
+        server.registerHandler(
+            TransactionHandlers.MessageTypes.GET_ALL_TRANSACTIONS,
+            TransactionHandlers.getAllTransactionsHandler(transactionService)
+        );
+        
+        LOGGER.info("Manejadores de transacciones registrados en el servidor");
     }
     
     /**
@@ -120,22 +134,9 @@ public class Main {
      * @param server El servidor a mantener en ejecución.
      */
     private static void keepServerRunning(ServerService server) {
-        // Agregar gancho de apagado para limpieza al terminar
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Apagando servidor...");
-            try {
-                if (server != null && server.isServerRunning()) {
-                    server.stopServer();
-                }
-            } catch (ServerOperationException e) {
-                LOGGER.error("Error al apagar el servidor", e);
-            }
-        }));
+        // El ShutdownHook ya está registrado internamente en el ServerService,
+        // por lo que aquí solo necesitamos mantener el hilo principal activo
         
-        // Aquí puedes implementar lógica adicional para mantener la aplicación en ejecución
-        // Por ejemplo, un bucle o una espera en un objeto de sincronización
-        
-        // Ejemplo simple: Mantener el hilo principal activo con un bucle sencillo
         LOGGER.info("Servidor en ejecución. Presiona Ctrl+C para detener.");
         try {
             // Este objeto se usa solo para mantener el programa en ejecución

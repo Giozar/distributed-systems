@@ -1,6 +1,8 @@
 package com.giozar04.servers.application.services;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,13 +12,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.giozar04.servers.domain.classes.AbstractServer;
 import com.giozar04.servers.domain.exceptions.ServerOperationException;
+import com.giozar04.servers.domain.handlers.MessageHandler;
 import com.giozar04.servers.domain.models.ClientSocket;
+import com.giozar04.servers.domain.models.Message;
 import com.giozar04.shared.logging.CustomLogger;
 
 /**
  * Implementación concreta del servidor de sockets como Singleton.
  * Garantiza que solo exista una instancia del servidor en toda la aplicación.
- * Incluye manejo automático de recursos con ShutdownHook.
+ * Incluye manejo automático de recursos con ShutdownHook y procesamiento de mensajes.
  */
 public class ServerService extends AbstractServer {
 
@@ -28,6 +32,9 @@ public class ServerService extends AbstractServer {
     
     // Contador atómico para generar IDs únicos para cada cliente
     private final AtomicInteger clientIdCounter;
+    
+    // Mapa para almacenar los manejadores de mensajes según su tipo
+    private final Map<String, MessageHandler> messageHandlers;
     
     // Flag para verificar si el ShutdownHook ya se ha registrado
     private boolean shutdownHookRegistered = false;
@@ -45,6 +52,7 @@ public class ServerService extends AbstractServer {
         super(serverHost, serverPort, threadPool, logger);
         this.connectedClients = new ConcurrentHashMap<>();
         this.clientIdCounter = new AtomicInteger(1);
+        this.messageHandlers = new ConcurrentHashMap<>();
         registerShutdownHook();
     }
 
@@ -88,6 +96,31 @@ public class ServerService extends AbstractServer {
      */
     public static ServerService getInstance() {
         return instance;
+    }
+
+    /**
+     * Registra un manejador para un tipo específico de mensaje.
+     *
+     * @param messageType El tipo de mensaje que el manejador procesará.
+     * @param handler El manejador que procesará el mensaje.
+     * @return La instancia actual del servidor (para encadenamiento de métodos).
+     */
+    public ServerService registerHandler(String messageType, MessageHandler handler) {
+        messageHandlers.put(messageType, handler);
+        logger.info("Manejador registrado para mensajes de tipo: " + messageType);
+        return this;
+    }
+    
+    /**
+     * Elimina un manejador para un tipo específico de mensaje.
+     *
+     * @param messageType El tipo de mensaje cuyo manejador se eliminará.
+     * @return La instancia actual del servidor (para encadenamiento de métodos).
+     */
+    public ServerService unregisterHandler(String messageType) {
+        messageHandlers.remove(messageType);
+        logger.info("Manejador eliminado para mensajes de tipo: " + messageType);
+        return this;
     }
 
     /**
@@ -190,32 +223,122 @@ public class ServerService extends AbstractServer {
 
         // Manejar comunicación con el cliente en un hilo separado
         threadPool.submit(() -> {
+            ObjectInputStream in = null;
+            ObjectOutputStream out = null;
+            
             try {
-                // Aquí iría la lógica específica para comunicarse con el cliente
-                // Por ejemplo, leer/escribir mensajes, procesar solicitudes, etc.
-                
-                // Por ahora solo mantenemos la conexión abierta
                 Socket socket = clientSocket.getSocket();
+                
+                // Configurar streams para comunicación de objetos
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
+                
+                // Enviar mensaje de bienvenida
+                Message welcomeMessage = Message.createSuccessMessage(
+                        "WELCOME", "Conexión establecida. Cliente ID: " + clientSocket.getId());
+                out.writeObject(welcomeMessage);
+                out.flush();
+                
+                // Bucle de comunicación con el cliente
                 while (!socket.isClosed() && isRunning) {
-                    // Implementar lógica de comunicación específica aquí
-                    Thread.sleep(1000); // Para evitar consumo excesivo de CPU en este ejemplo
+                    // Intentar leer un mensaje
+                    Object receivedObj = in.readObject();
+                    
+                    if (receivedObj instanceof Message) {
+                        Message receivedMessage = (Message) receivedObj;
+                        logger.info("Mensaje recibido del cliente " + clientSocket.getId() + 
+                                   ": " + receivedMessage.getType());
+                        
+                        // Procesar el mensaje con el manejador apropiado
+                        processMessage(clientSocket, receivedMessage, out);
+                    } else {
+                        logger.warn("Mensaje recibido no es del tipo esperado: " + 
+                                    (receivedObj != null ? receivedObj.getClass().getName() : "null"));
+                        
+                        // Enviar mensaje de error
+                        Message errorMessage = Message.createErrorMessage(
+                                "ERROR", "Tipo de mensaje no soportado");
+                        out.writeObject(errorMessage);
+                        out.flush();
+                    }
                 }
-            } catch (InterruptedException e) {
-                logger.error("Error al manejar el cliente " + clientSocket.getId(), e);
+            } catch (ClassNotFoundException e) {
+                logger.error("Error de serialización al procesar mensaje del cliente " + clientSocket.getId(), e);
+            } catch (IOException e) {
+                // Esto ocurre normalmente cuando el cliente se desconecta
+                logger.info("Cliente " + clientSocket.getId() + " desconectado: " + e.getMessage());
+            } catch (Exception e) {
+                logger.error("Error inesperado al manejar el cliente " + clientSocket.getId(), e);
             } finally {
+                // Cerrar recursos
                 try {
-                    // Cerrar recursos y eliminar cliente del mapa cuando se desconecta
+                    if (in != null) in.close();
+                    if (out != null) out.close();
+                    
                     if (!clientSocket.getSocket().isClosed()) {
                         clientSocket.getSocket().close();
                     }
                 } catch (IOException e) {
-                    logger.error("Error al cerrar el socket del cliente " + clientSocket.getId(), e);
+                    logger.error("Error al cerrar recursos del cliente " + clientSocket.getId(), e);
                 }
                 
+                // Eliminar cliente del mapa
                 connectedClients.remove(clientSocket.getId());
-                logger.info("Cliente " + clientSocket.getId() + " desconectado");
+                logger.info("Cliente " + clientSocket.getId() + " eliminado del registro");
             }
         });
+    }
+
+    /**
+     * Procesa un mensaje recibido utilizando el manejador apropiado.
+     *
+     * @param clientSocket El socket del cliente que envió el mensaje.
+     * @param message El mensaje recibido.
+     * @param out El stream de salida para enviar respuestas.
+     * @throws IOException Si ocurre un error al enviar la respuesta.
+     */
+    private void processMessage(ClientSocket clientSocket, Message message, 
+                               ObjectOutputStream out) throws IOException {
+        String messageType = message.getType();
+        
+        // Buscar el manejador adecuado para este tipo de mensaje
+        MessageHandler handler = messageHandlers.get(messageType);
+        
+        if (handler != null) {
+            try {
+                // Procesar el mensaje con el manejador y obtener la respuesta
+                Message response = handler.handleMessage(clientSocket, message);
+                
+                // Enviar la respuesta si no es null
+                if (response != null && out != null) {
+                    out.writeObject(response);
+                    out.flush();
+                    logger.info("Respuesta enviada al cliente " + clientSocket.getId() + 
+                               " para mensaje tipo: " + messageType);
+                }
+            } catch (Exception e) {
+                logger.error("Error al procesar mensaje tipo '" + messageType + 
+                           "' del cliente " + clientSocket.getId(), e);
+                
+                // Enviar mensaje de error al cliente
+                if (out != null) {
+                    Message errorResponse = Message.createErrorMessage(
+                        messageType, "Error al procesar solicitud: " + e.getMessage());
+                    out.writeObject(errorResponse);
+                    out.flush();
+                }
+            }
+        } else {
+            logger.warn("No hay manejador registrado para mensajes de tipo: " + messageType);
+            
+            // Enviar mensaje de error al cliente
+            if (out != null) {
+                Message errorResponse = Message.createErrorMessage(
+                    messageType, "Tipo de mensaje no soportado: " + messageType);
+                out.writeObject(errorResponse);
+                out.flush();
+            }
+        }
     }
 
     @Override
@@ -258,6 +381,55 @@ public class ServerService extends AbstractServer {
      */
     public ClientSocket getClientById(int clientId) {
         return connectedClients.get(clientId);
+    }
+    
+    /**
+     * Envía un mensaje a un cliente específico.
+     *
+     * @param clientId El ID del cliente.
+     * @param message El mensaje a enviar.
+     * @throws IOException Si ocurre un error de E/S durante el envío.
+     * @throws ServerOperationException Si el cliente no está conectado.
+     */
+    public void sendMessageToClient(int clientId, Message message) 
+            throws IOException, ServerOperationException {
+        ClientSocket clientSocket = connectedClients.get(clientId);
+        
+        if (clientSocket == null) {
+            throw new ServerOperationException("Cliente con ID " + clientId + " no encontrado");
+        }
+        
+        try {
+            Socket socket = clientSocket.getSocket();
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(message);
+            out.flush();
+            logger.info("Mensaje enviado al cliente " + clientId + ": " + message.getType());
+        } catch (IOException e) {
+            logger.error("Error al enviar mensaje al cliente " + clientId, e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Envía un mensaje a todos los clientes conectados.
+     *
+     * @param message El mensaje a enviar.
+     */
+    public void broadcastMessage(Message message) {
+        for (ClientSocket clientSocket : connectedClients.values()) {
+            try {
+                Socket socket = clientSocket.getSocket();
+                ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+                out.writeObject(message);
+                out.flush();
+            } catch (IOException e) {
+                logger.error("Error al enviar mensaje de broadcast al cliente " + 
+                           clientSocket.getId(), e);
+            }
+        }
+        logger.info("Mensaje broadcast enviado a " + connectedClients.size() + 
+                  " clientes: " + message.getType());
     }
     
     @Override
