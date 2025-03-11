@@ -13,7 +13,7 @@ public class Main {
 
 
         try {
-            Socket socket = new Socket("localhost", 3000);
+            Socket socket = new Socket("localhost", 8080);
 
             InputStream inputStream = socket.getInputStream();
 

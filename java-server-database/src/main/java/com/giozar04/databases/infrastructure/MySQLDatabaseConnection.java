@@ -1,18 +1,18 @@
-package com.giozar04.databases.domain.models;
+package com.giozar04.databases.infrastructure;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-import com.giozar04.databases.domain.classes.AbstractDatabaseConnection;
-import com.giozar04.databases.domain.classes.DatabaseExceptions;
-import com.giozar04.databases.domain.classes.DatabaseExceptions.ConnectionException;
-import com.giozar04.databases.domain.classes.DatabaseExceptions.DriverException;
+import com.giozar04.databases.domain.exceptions.DatabaseExceptions;
+import com.giozar04.databases.domain.exceptions.DatabaseExceptions.ConnectionException;
+import com.giozar04.databases.domain.exceptions.DatabaseExceptions.DriverException;
+import com.giozar04.databases.domain.models.DatabaseConnection;
 
 /**
  * Implementación mejorada de conexión a MySQL con manejo de excepciones personalizadas.
  */
-public class MySQLDatabaseConnection extends AbstractDatabaseConnection {
+public class MySQLDatabaseConnection extends DatabaseConnection {
 
     // Instancia única (patrón Singleton)
     private static volatile MySQLDatabaseConnection instance;
@@ -27,6 +27,13 @@ public class MySQLDatabaseConnection extends AbstractDatabaseConnection {
     
     /**
      * Método estático para obtener la instancia única de la conexión (patrón Singleton).
+     * 
+     * @param databaseHost el host de la base de datos
+     * @param databasePort el puerto de la base de datos
+     * @param databaseName el nombre de la base de datos
+     * @param databaseUsername el nombre de usuario para la conexión
+     * @param databasePassword la contraseña para la conexión
+     * @return la instancia única de MySQLDatabaseConnection
      */
     public static MySQLDatabaseConnection getInstance(String databaseHost, String databasePort, String databaseName, 
                                                      String databaseUsername, String databasePassword) {

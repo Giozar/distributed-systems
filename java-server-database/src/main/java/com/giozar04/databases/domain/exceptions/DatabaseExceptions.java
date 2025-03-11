@@ -1,4 +1,4 @@
-package com.giozar04.databases.domain.classes;
+package com.giozar04.databases.domain.exceptions;
 
 import java.sql.SQLException;
 

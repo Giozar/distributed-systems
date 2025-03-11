@@ -7,7 +7,7 @@ import java.sql.SQLException;
  * Interfaz que define las operaciones básicas para una conexión a base de datos.
  * Extiende AutoCloseable para garantizar la liberación de recursos.
  */
-public interface DatabaseConnection extends AutoCloseable {
+public interface DatabaseConnectionInterface extends AutoCloseable {
     
     /**
      * Establece la conexión con la base de datos.

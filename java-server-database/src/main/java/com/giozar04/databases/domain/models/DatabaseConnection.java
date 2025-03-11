@@ -1,4 +1,4 @@
-package com.giozar04.databases.domain.classes;
+package com.giozar04.databases.domain.models;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -6,14 +6,14 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.giozar04.databases.domain.interfaces.DatabaseConnection;
-import com.giozar04.shared.CustomLogger;
+import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
+import com.giozar04.shared.logging.CustomLogger;
 
 /**
  * Clase abstracta que implementa funcionalidad común para conexiones a bases de datos.
  * Proporciona una implementación base para el patrón repositorio.
  */
-public abstract class AbstractDatabaseConnection implements DatabaseConnection {
+public abstract class DatabaseConnection implements DatabaseConnectionInterface {
     
     // Lock para garantizar thread-safety durante la inicialización
     protected static final ReentrantLock LOCK = new ReentrantLock();
@@ -50,7 +50,7 @@ public abstract class AbstractDatabaseConnection implements DatabaseConnection {
      * @param databasePassword la contraseña para la conexión
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    protected AbstractDatabaseConnection(String databaseHost, String databasePort, String databaseName, 
+    protected DatabaseConnection(String databaseHost, String databasePort, String databaseName, 
                                       String databaseUsername, String databasePassword) {
         // Validar parámetros de entrada
         this.databaseHost = Objects.requireNonNull(databaseHost, "El databaseHost no puede ser nulo");
