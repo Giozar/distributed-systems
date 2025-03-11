@@ -20,23 +20,23 @@ public class MySQLDatabaseConnection extends AbstractDatabaseConnection {
     /**
      * Constructor privado que inicializa la conexión con parámetros seguros.
      */
-    private MySQLDatabaseConnection(String host, String port, String databaseName, 
-                                   String username, String password) {
-        super(host, port, databaseName, username, password);
+    private MySQLDatabaseConnection(String databaseHost, String databasePort, String databaseName, 
+                                   String databaseUsername, String databasePassword) {
+        super(databaseHost, databasePort, databaseName, databaseUsername, databasePassword);
     }
     
     /**
      * Método estático para obtener la instancia única de la conexión (patrón Singleton).
      */
-    public static MySQLDatabaseConnection getInstance(String host, String port, String databaseName, 
-                                                     String username, String password) {
+    public static MySQLDatabaseConnection getInstance(String databaseHost, String databasePort, String databaseName, 
+                                                     String databaseUsername, String databasePassword) {
         // Verificación rápida sin bloqueo
         if (instance == null) {
             LOCK.lock();
             try {
                 // Verificación doble para garantizar que solo se crea una instancia
                 if (instance == null) {
-                    instance = new MySQLDatabaseConnection(host, port, databaseName, username, password);
+                    instance = new MySQLDatabaseConnection(databaseHost, databasePort, databaseName, databaseUsername, databasePassword);
                 }
             } finally {
                 LOCK.unlock();
@@ -47,7 +47,7 @@ public class MySQLDatabaseConnection extends AbstractDatabaseConnection {
     
     @Override
     protected String buildJdbcUrl() {
-        return String.format("jdbc:mysql://%s:%s/%s", host, port, databaseName);
+        return String.format("jdbc:mysql://%s:%s/%s", databaseHost, databasePort, databaseName);
     }
     
     @Override

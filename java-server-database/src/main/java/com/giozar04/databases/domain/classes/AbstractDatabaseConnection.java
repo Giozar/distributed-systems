@@ -25,11 +25,11 @@ public abstract class AbstractDatabaseConnection implements DatabaseConnection {
     protected final CustomLogger logger;
     
     // Propiedades básicas de conexión
-    protected final String host;
-    protected final String port;
+    protected final String databaseHost;
+    protected final String databasePort;
     protected final String databaseName;
-    protected final String username;
-    protected final String password;
+    protected final String databaseUsername;
+    protected final String databasePassword;
     
     // Propiedades de conexión adicionales
     protected final Properties connectionProps;
@@ -43,29 +43,29 @@ public abstract class AbstractDatabaseConnection implements DatabaseConnection {
     /**
      * Constructor que inicializa los parámetros básicos de conexión.
      * 
-     * @param host el host de la base de datos
-     * @param port el puerto de la base de datos
+     * @param databaseHost el databaseHost de la base de datos
+     * @param databasePort el puerto de la base de datos
      * @param databaseName el nombre de la base de datos
-     * @param username el nombre de usuario para la conexión
-     * @param password la contraseña para la conexión
+     * @param databaseUsername el nombre de usuario para la conexión
+     * @param databasePassword la contraseña para la conexión
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    protected AbstractDatabaseConnection(String host, String port, String databaseName, 
-                                      String username, String password) {
+    protected AbstractDatabaseConnection(String databaseHost, String databasePort, String databaseName, 
+                                      String databaseUsername, String databasePassword) {
         // Validar parámetros de entrada
-        this.host = Objects.requireNonNull(host, "El host no puede ser nulo");
-        this.port = Objects.requireNonNull(port, "El puerto no puede ser nulo");
+        this.databaseHost = Objects.requireNonNull(databaseHost, "El databaseHost no puede ser nulo");
+        this.databasePort = Objects.requireNonNull(databasePort, "El puerto no puede ser nulo");
         this.databaseName = Objects.requireNonNull(databaseName, "El nombre de la base de datos no puede ser nulo");
-        this.username = Objects.requireNonNull(username, "El nombre de usuario no puede ser nulo");
-        this.password = Objects.requireNonNull(password, "La contraseña no puede ser nula");
+        this.databaseUsername = Objects.requireNonNull(databaseUsername, "El nombre de usuario no puede ser nulo");
+        this.databasePassword = Objects.requireNonNull(databasePassword, "La contraseña no puede ser nula");
         
         // Inicializar logger
         this.logger = new CustomLogger();
         
         // Inicializar propiedades de conexión
         this.connectionProps = new Properties();
-        this.connectionProps.setProperty("user", username);
-        this.connectionProps.setProperty("password", password);
+        this.connectionProps.setProperty("user", databaseUsername);
+        this.connectionProps.setProperty("databasePassword", databasePassword);
         
         // Añadir propiedades básicas de seguridad
         configureConnectionProperties();
