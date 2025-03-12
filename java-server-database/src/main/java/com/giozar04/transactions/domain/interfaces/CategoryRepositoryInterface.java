@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.giozar04.transactions.domain.entities.Category;
 
-public interface CategoryRepository {
+public interface CategoryRepositoryInterface {
     Category createCategory(Category category);
     Category getCategoryById(long id);
     Category updateCategoryById(long id, Category category);
