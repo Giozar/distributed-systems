@@ -2,6 +2,7 @@ package com.giozar04.transactions.infrastructure.handlers;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +13,7 @@ import com.giozar04.servers.domain.models.Message;
 import com.giozar04.shared.logging.CustomLogger;
 import com.giozar04.transactions.application.services.TransactionService;
 import com.giozar04.transactions.domain.entities.Transaction;
+import com.giozar04.transactions.domain.enums.PaymentMethod;
 
 /**
  * Clase que proporciona manejadores para las operaciones relacionadas con transacciones.
@@ -42,9 +44,15 @@ public class TransactionHandlers {
     private static Map<String, Object> transactionToMap(Transaction transaction) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", transaction.getId());
+        map.put("type", transaction.getType());
+        map.put("paymentMethod", transaction.getPaymentMethod().name());
         map.put("amount", transaction.getAmount());
+        map.put("title", transaction.getTitle());
+        map.put("category", transaction.getCategory());
         map.put("description", transaction.getDescription());
+        map.put("comments", transaction.getComments());
         map.put("date", transaction.getDate().format(DATE_FORMATTER));
+        map.put("tags", transaction.getTags());
         return map;
     }
     
@@ -54,6 +62,7 @@ public class TransactionHandlers {
      * @param map El mapa con las propiedades.
      * @return Una transacción con los valores del mapa.
      */
+    @SuppressWarnings("unchecked")
     private static Transaction mapToTransaction(Map<String, Object> map) {
         Transaction transaction = new Transaction();
         
@@ -61,18 +70,51 @@ public class TransactionHandlers {
             transaction.setId(((Number) map.get("id")).longValue());
         }
         
+        if (map.containsKey("type")) {
+            transaction.setType((String) map.get("type"));
+        }
+        
+        if (map.containsKey("paymentMethod")) {
+            try {
+                transaction.setPaymentMethod(PaymentMethod.valueOf((String) map.get("paymentMethod")));
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Método de pago inválido, usando CASH como valor predeterminado", e);
+                transaction.setPaymentMethod(PaymentMethod.CASH);
+            }
+        } else {
+            transaction.setPaymentMethod(PaymentMethod.CASH);
+        }
+        
         if (map.containsKey("amount")) {
             transaction.setAmount(((Number) map.get("amount")).doubleValue());
+        }
+        
+        if (map.containsKey("title")) {
+            transaction.setTitle((String) map.get("title"));
+        }
+        
+        if (map.containsKey("category")) {
+            transaction.setCategory((String) map.get("category"));
         }
         
         if (map.containsKey("description")) {
             transaction.setDescription((String) map.get("description"));
         }
         
+        if (map.containsKey("comments")) {
+            transaction.setComments((String) map.get("comments"));
+        }
+        
         if (map.containsKey("date")) {
             transaction.setDate(ZonedDateTime.parse((String) map.get("date"), DATE_FORMATTER));
         } else {
             transaction.setDate(ZonedDateTime.now());
+        }
+        
+        if (map.containsKey("tags") && map.get("tags") != null) {
+            transaction.setTags((List<String>) map.get("tags"));
+        } else {
+            transaction.setTags(new ArrayList<>());
         }
         
         return transaction;
@@ -89,6 +131,7 @@ public class TransactionHandlers {
             LOGGER.info("Procesando solicitud de creación de transacción");
             
             // Extraer datos de la transacción del mensaje
+            @SuppressWarnings("unchecked")
             Map<String, Object> transactionData = (Map<String, Object>) message.getData("transaction");
             if (transactionData == null) {
                 return Message.createErrorMessage(MessageTypes.CREATE_TRANSACTION, 
@@ -163,6 +206,7 @@ public class TransactionHandlers {
             }
             
             // Extraer datos de la transacción del mensaje
+            @SuppressWarnings("unchecked")
             Map<String, Object> transactionData = (Map<String, Object>) message.getData("transaction");
             if (transactionData == null) {
                 return Message.createErrorMessage(MessageTypes.UPDATE_TRANSACTION, 
@@ -220,6 +264,7 @@ public class TransactionHandlers {
      * @param transactionService El servicio de transacciones a utilizar.
      * @return Un manejador para mensajes de obtención de todas las transacciones.
      */
+    @SuppressWarnings("unchecked")
     public static MessageHandler getAllTransactionsHandler(TransactionService transactionService) {
         return (ClientSocket clientSocket, Message message) -> {
             LOGGER.info("Procesando solicitud de obtención de todas las transacciones");
@@ -233,7 +278,7 @@ public class TransactionHandlers {
                     "Transacciones obtenidas exitosamente");
             
             // Convertir cada transacción a un mapa y añadirlas a una lista
-            Map<String, Object>[] transactionMaps = new Map[transactions.size()];
+            Map<String, Object>[] transactionMaps = new HashMap[transactions.size()];
             for (int i = 0; i < transactions.size(); i++) {
                 transactionMaps[i] = transactionToMap(transactions.get(i));
             }

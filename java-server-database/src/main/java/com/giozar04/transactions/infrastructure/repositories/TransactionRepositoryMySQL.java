@@ -4,14 +4,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
 import com.giozar04.transactions.domain.classes.TransactionExceptions;
 import com.giozar04.transactions.domain.entities.Transaction;
+import com.giozar04.transactions.domain.enums.PaymentMethod;
 import com.giozar04.transactions.domain.models.TransactionRepository;
 
 /**
@@ -21,9 +24,9 @@ import com.giozar04.transactions.domain.models.TransactionRepository;
 public class TransactionRepositoryMySQL extends TransactionRepository {
 
     // Consultas SQL como constantes para mejor mantenibilidad
-    private static final String SQL_INSERT = "INSERT INTO transactions (amount, description, date) VALUES (?, ?, ?)";
+    private static final String SQL_INSERT = "INSERT INTO transactions (type, payment_method, amount, title, category, description, comments, date, timezone, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     private static final String SQL_SELECT_BY_ID = "SELECT * FROM transactions WHERE id = ?";
-    private static final String SQL_UPDATE = "UPDATE transactions SET amount = ?, description = ?, date = ? WHERE id = ?";
+    private static final String SQL_UPDATE = "UPDATE transactions SET type = ?, payment_method = ?, amount = ?, title = ?, category = ?, description = ?, comments = ?, date = ?, timezone = ?, tags = ? WHERE id = ?";
     private static final String SQL_DELETE = "DELETE FROM transactions WHERE id = ?";
     private static final String SQL_SELECT_ALL = "SELECT * FROM transactions ORDER BY date DESC";
 
@@ -48,10 +51,23 @@ public class TransactionRepositoryMySQL extends TransactionRepository {
             connection = databaseConnection.getConnection();
             
             try (PreparedStatement statement = connection.prepareStatement(SQL_INSERT, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                statement.setDouble(1, transaction.getAmount());
-                statement.setString(2, transaction.getDescription());
-                statement.setTimestamp(3, java.sql.Timestamp.valueOf(
-                        transaction.getDate().toLocalDateTime()));
+                statement.setString(1, transaction.getType());
+                statement.setString(2, transaction.getPaymentMethod().name());
+                statement.setDouble(3, transaction.getAmount());
+                statement.setString(4, transaction.getTitle());
+                statement.setString(5, transaction.getCategory());
+                statement.setString(6, transaction.getDescription());
+                statement.setString(7, transaction.getComments());
+                
+                // Convertir ZonedDateTime a Timestamp para almacenamiento
+                LocalDateTime localDateTime = transaction.getDate().toLocalDateTime();
+                statement.setTimestamp(8, Timestamp.valueOf(localDateTime));
+                
+                // Guardar la zona horaria
+                statement.setString(9, transaction.getDate().getZone().getId());
+                
+                // Convertir lista de tags a string separado por comas
+                statement.setString(10, transaction.getTagsAsString());
                 
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows == 0) {
@@ -133,11 +149,25 @@ public class TransactionRepositoryMySQL extends TransactionRepository {
             connection = databaseConnection.getConnection();
             
             try (PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
-                statement.setDouble(1, transaction.getAmount());
-                statement.setString(2, transaction.getDescription());
-                statement.setTimestamp(3, java.sql.Timestamp.valueOf(
-                        transaction.getDate().toLocalDateTime()));
-                statement.setLong(4, id);
+                statement.setString(1, transaction.getType());
+                statement.setString(2, transaction.getPaymentMethod().name());
+                statement.setDouble(3, transaction.getAmount());
+                statement.setString(4, transaction.getTitle());
+                statement.setString(5, transaction.getCategory());
+                statement.setString(6, transaction.getDescription());
+                statement.setString(7, transaction.getComments());
+                
+                // Convertir ZonedDateTime a Timestamp para almacenamiento
+                LocalDateTime localDateTime = transaction.getDate().toLocalDateTime();
+                statement.setTimestamp(8, Timestamp.valueOf(localDateTime));
+                
+                // Guardar la zona horaria
+                statement.setString(9, transaction.getDate().getZone().getId());
+                
+                // Convertir lista de tags a string separado por comas
+                statement.setString(10, transaction.getTagsAsString());
+                
+                statement.setLong(11, id);
                 
                 int affectedRows = statement.executeUpdate();
                 if (affectedRows == 0) {
@@ -251,15 +281,37 @@ public class TransactionRepositoryMySQL extends TransactionRepository {
     private Transaction mapResultSetToTransaction(ResultSet resultSet) throws SQLException {
         Transaction transaction = new Transaction();
         transaction.setId(resultSet.getLong("id"));
-        transaction.setAmount(resultSet.getDouble("amount"));
-        transaction.setDescription(resultSet.getString("description"));
+        transaction.setType(resultSet.getString("type"));
         
-        // Manejo seguro de la fecha
-        java.sql.Timestamp timestamp = resultSet.getTimestamp("date");
-        LocalDateTime dateTime = timestamp != null 
-            ? timestamp.toLocalDateTime() 
-            : LocalDateTime.now();
-        transaction.setDate(dateTime.atZone(ZoneId.systemDefault()));
+        // Convertir string a enum
+        String paymentMethodStr = resultSet.getString("payment_method");
+        try {
+            transaction.setPaymentMethod(PaymentMethod.valueOf(paymentMethodStr));
+        } catch (IllegalArgumentException e) {
+            logger.warn("Método de pago desconocido: " + paymentMethodStr + ". Utilizando valor por defecto CASH.", e);
+            transaction.setPaymentMethod(PaymentMethod.CASH);
+        }
+        
+        transaction.setAmount(resultSet.getDouble("amount"));
+        transaction.setTitle(resultSet.getString("title"));
+        transaction.setCategory(resultSet.getString("category"));
+        transaction.setDescription(resultSet.getString("description"));
+        transaction.setComments(resultSet.getString("comments"));
+        
+        // Reconstruir ZonedDateTime a partir de timestamp y zona horaria
+        Timestamp timestamp = resultSet.getTimestamp("date");
+        String timezone = resultSet.getString("timezone");
+        if (timestamp != null) {
+            LocalDateTime localDateTime = timestamp.toLocalDateTime();
+            ZoneId zoneId = ZoneId.of(timezone != null && !timezone.isEmpty() ? timezone : "UTC");
+            transaction.setDate(ZonedDateTime.of(localDateTime, zoneId));
+        } else {
+            transaction.setDate(ZonedDateTime.now());
+        }
+        
+        // Procesar tags
+        String tagsString = resultSet.getString("tags");
+        transaction.setTagsFromString(tagsString);
         
         return transaction;
     }

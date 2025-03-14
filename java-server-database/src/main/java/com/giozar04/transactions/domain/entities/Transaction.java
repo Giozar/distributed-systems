@@ -1,6 +1,7 @@
 package com.giozar04.transactions.domain.entities;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.giozar04.transactions.domain.enums.PaymentMethod;
@@ -12,17 +13,18 @@ public class Transaction {
     private PaymentMethod paymentMethod;
     private double amount;
     private String title;
-    private Category category;
+    private String category;
     private String description;
     private String comments;
     private ZonedDateTime date;
-    private List<Tag> tags; // Varias etiquetas asignables
+    private List<String> tags; // Varias etiquetas asignables
 
     public Transaction() {
+        this.tags = new ArrayList<>();
     }
 
     public Transaction(long id, String type, PaymentMethod paymentMethod, double amount, String title,
-                       Category category, String description, String comments, ZonedDateTime date, List<Tag> tags) {
+                      String category, String description, String comments, ZonedDateTime date, List<String> tags) {
         this.id = id;
         this.type = type;
         this.paymentMethod = paymentMethod;
@@ -32,7 +34,7 @@ public class Transaction {
         this.description = description;
         this.comments = comments;
         this.date = date;
-        this.tags = tags;
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
 
     public long getId() {
@@ -75,11 +77,11 @@ public class Transaction {
         this.title = title;
     }
 
-    public Category getCategory() {
+    public String getCategory() {
         return category;
     }
 
-    public void setCategory(Category category) {
+    public void setCategory(String category) {
         this.category = category;
     }
 
@@ -107,14 +109,31 @@ public class Transaction {
         this.date = date;
     }
 
-    public List<Tag> getTags() {
+    public List<String> getTags() {
         return tags;
     }
 
-    public void setTags(List<Tag> tags) {
-        this.tags = tags;
+    public void setTags(List<String> tags) {
+        this.tags = tags != null ? tags : new ArrayList<>();
     }
-
     
-
+    // Métodos helper para convertir entre List<String> y String para la BD
+    public String getTagsAsString() {
+        if (tags == null || tags.isEmpty()) {
+            return "";
+        }
+        return String.join(",", tags);
+    }
+    
+    public void setTagsFromString(String tagsString) {
+        if (tagsString == null || tagsString.isEmpty()) {
+            this.tags = new ArrayList<>();
+        } else {
+            List<String> tagsList = new ArrayList<>();
+            for (String tag : tagsString.split(",")) {
+                tagsList.add(tag.trim());
+            }
+            this.tags = tagsList;
+        }
+    }
 }
