@@ -47,3 +47,4 @@ Thumbs.db
 # Archivos de configuración del entorno
 .env
 .env.local
+src/main/java/com/giozar04/resources/config.properties
