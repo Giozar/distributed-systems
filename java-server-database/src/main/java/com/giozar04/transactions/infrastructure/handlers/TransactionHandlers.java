@@ -1,8 +1,5 @@
 package com.giozar04.transactions.infrastructure.handlers;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,8 +9,8 @@ import com.giozar04.servers.domain.models.ClientSocket;
 import com.giozar04.servers.domain.models.Message;
 import com.giozar04.shared.logging.CustomLogger;
 import com.giozar04.transactions.application.services.TransactionService;
+import com.giozar04.transactions.application.utils.TransactionUtils;
 import com.giozar04.transactions.domain.entities.Transaction;
-import com.giozar04.transactions.domain.enums.PaymentMethod;
 
 /**
  * Clase que proporciona manejadores para las operaciones relacionadas con transacciones.
@@ -22,7 +19,6 @@ import com.giozar04.transactions.domain.enums.PaymentMethod;
 public class TransactionHandlers {
     
     private static final CustomLogger LOGGER = new CustomLogger();
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_ZONED_DATE_TIME;
     
     /**
      * Tipos de mensajes para operaciones de transacciones.
@@ -33,91 +29,6 @@ public class TransactionHandlers {
         public static final String UPDATE_TRANSACTION = "UPDATE_TRANSACTION";
         public static final String DELETE_TRANSACTION = "DELETE_TRANSACTION";
         public static final String GET_ALL_TRANSACTIONS = "GET_ALL_TRANSACTIONS";
-    }
-    
-    /**
-     * Convierte una transacción a un mapa de propiedades.
-     * 
-     * @param transaction La transacción a convertir.
-     * @return Un mapa con las propiedades de la transacción.
-     */
-    private static Map<String, Object> transactionToMap(Transaction transaction) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", transaction.getId());
-        map.put("type", transaction.getType());
-        map.put("paymentMethod", transaction.getPaymentMethod().name());
-        map.put("amount", transaction.getAmount());
-        map.put("title", transaction.getTitle());
-        map.put("category", transaction.getCategory());
-        map.put("description", transaction.getDescription());
-        map.put("comments", transaction.getComments());
-        map.put("date", transaction.getDate().format(DATE_FORMATTER));
-        map.put("tags", transaction.getTags());
-        return map;
-    }
-    
-    /**
-     * Convierte un mapa de propiedades a una transacción.
-     * 
-     * @param map El mapa con las propiedades.
-     * @return Una transacción con los valores del mapa.
-     */
-    @SuppressWarnings("unchecked")
-    private static Transaction mapToTransaction(Map<String, Object> map) {
-        Transaction transaction = new Transaction();
-        
-        if (map.containsKey("id")) {
-            transaction.setId(((Number) map.get("id")).longValue());
-        }
-        
-        if (map.containsKey("type")) {
-            transaction.setType((String) map.get("type"));
-        }
-        
-        if (map.containsKey("paymentMethod")) {
-            try {
-                transaction.setPaymentMethod(PaymentMethod.valueOf((String) map.get("paymentMethod")));
-            } catch (IllegalArgumentException e) {
-                LOGGER.warn("Método de pago inválido, usando CASH como valor predeterminado", e);
-                transaction.setPaymentMethod(PaymentMethod.CASH);
-            }
-        } else {
-            transaction.setPaymentMethod(PaymentMethod.CASH);
-        }
-        
-        if (map.containsKey("amount")) {
-            transaction.setAmount(((Number) map.get("amount")).doubleValue());
-        }
-        
-        if (map.containsKey("title")) {
-            transaction.setTitle((String) map.get("title"));
-        }
-        
-        if (map.containsKey("category")) {
-            transaction.setCategory((String) map.get("category"));
-        }
-        
-        if (map.containsKey("description")) {
-            transaction.setDescription((String) map.get("description"));
-        }
-        
-        if (map.containsKey("comments")) {
-            transaction.setComments((String) map.get("comments"));
-        }
-        
-        if (map.containsKey("date")) {
-            transaction.setDate(ZonedDateTime.parse((String) map.get("date"), DATE_FORMATTER));
-        } else {
-            transaction.setDate(ZonedDateTime.now());
-        }
-        
-        if (map.containsKey("tags") && map.get("tags") != null) {
-            transaction.setTags((List<String>) map.get("tags"));
-        } else {
-            transaction.setTags(new ArrayList<>());
-        }
-        
-        return transaction;
     }
     
     /**
@@ -139,7 +50,7 @@ public class TransactionHandlers {
             }
             
             // Convertir mapa a objeto Transaction
-            Transaction transaction = mapToTransaction(transactionData);
+            Transaction transaction = TransactionUtils.mapToTransaction(transactionData);
             
             // Crear la transacción usando el servicio
             Transaction createdTransaction = transactionService.createTransaction(transaction);
@@ -150,7 +61,7 @@ public class TransactionHandlers {
                     "Transacción creada exitosamente");
             
             // Convertir la transacción creada a un mapa para incluirla en la respuesta
-            response.addData("transaction", transactionToMap(createdTransaction));
+            response.addData("transaction", TransactionUtils.transactionToMap(createdTransaction));
             
             return response;
         };
@@ -182,7 +93,7 @@ public class TransactionHandlers {
                     "Transacción obtenida exitosamente");
             
             // Convertir la transacción a un mapa para incluirla en la respuesta
-            response.addData("transaction", transactionToMap(transaction));
+            response.addData("transaction", TransactionUtils.transactionToMap(transaction));
             
             return response;
         };
@@ -214,7 +125,7 @@ public class TransactionHandlers {
             }
             
             // Convertir mapa a objeto Transaction
-            Transaction transaction = mapToTransaction(transactionData);
+            Transaction transaction = TransactionUtils.mapToTransaction(transactionData);
             
             // Actualizar la transacción usando el servicio
             Transaction updatedTransaction = transactionService.updateTransactionById(id, transaction);
@@ -225,7 +136,7 @@ public class TransactionHandlers {
                     "Transacción actualizada exitosamente");
             
             // Convertir la transacción actualizada a un mapa para incluirla en la respuesta
-            response.addData("transaction", transactionToMap(updatedTransaction));
+            response.addData("transaction", TransactionUtils.transactionToMap(updatedTransaction));
             
             return response;
         };
@@ -280,7 +191,7 @@ public class TransactionHandlers {
             // Convertir cada transacción a un mapa y añadirlas a una lista
             Map<String, Object>[] transactionMaps = new HashMap[transactions.size()];
             for (int i = 0; i < transactions.size(); i++) {
-                transactionMaps[i] = transactionToMap(transactions.get(i));
+                transactionMaps[i] = TransactionUtils.transactionToMap(transactions.get(i));
             }
             
             response.addData("transactions", transactionMaps);
