@@ -1,19 +1,42 @@
 package com.giozar04.client.gui;
 
-import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.time.ZonedDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
+
 import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
-import com.giozar04.databases.infrastructure.MySQLDatabaseConnection;
+import com.giozar04.databases.infrastructure.repositories.DatabaseConnectionMySQL;
 import com.giozar04.transactions.application.services.TransactionService;
 import com.giozar04.transactions.domain.entities.Transaction;
 import com.giozar04.transactions.domain.enums.PaymentMethod;
@@ -394,7 +417,7 @@ public class TabbedTransactionClientGUI extends JFrame {
     private void connectToDB() {
         try {
             // Inicializar conexión a la base de datos
-            dbConnection = MySQLDatabaseConnection.getInstance(
+            dbConnection = DatabaseConnectionMySQL.getInstance(
                 DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD);
             
             // Conectar a la base de datos

@@ -1,4 +1,4 @@
-package com.giozar04.databases.infrastructure;
+package com.giozar04.databases.infrastructure.repositories;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,15 +13,15 @@ import com.giozar04.databases.domain.models.DatabaseConnectionAbstract;
  * Implementación mejorada de conexión a MySQL con manejo de excepciones
  * personalizadas.
  */
-public class MySQLDatabaseConnection extends DatabaseConnectionAbstract {
+public class DatabaseConnectionMySQL extends DatabaseConnectionAbstract {
 
     // Instancia única (patrón Singleton)
-    private static volatile MySQLDatabaseConnection instance;
+    private static volatile DatabaseConnectionMySQL instance;
 
     /**
      * Constructor privado que inicializa la conexión con parámetros seguros.
      */
-    private MySQLDatabaseConnection(String databaseHost, String databasePort, String databaseName,
+    private DatabaseConnectionMySQL(String databaseHost, String databasePort, String databaseName,
             String databaseUsername, String databasePassword) {
         super(databaseHost, databasePort, databaseName, databaseUsername, databasePassword);
     }
@@ -37,7 +37,7 @@ public class MySQLDatabaseConnection extends DatabaseConnectionAbstract {
      * @param databasePassword la contraseña para la conexión
      * @return la instancia única de MySQLDatabaseConnection
      */
-    public static MySQLDatabaseConnection getInstance(String databaseHost, String databasePort, String databaseName,
+    public static DatabaseConnectionMySQL getInstance(String databaseHost, String databasePort, String databaseName,
             String databaseUsername, String databasePassword) {
         // Verificación rápida sin bloqueo
         if (instance == null) {
@@ -45,7 +45,7 @@ public class MySQLDatabaseConnection extends DatabaseConnectionAbstract {
             try {
                 // Verificación doble para garantizar que solo se crea una instancia
                 if (instance == null) {
-                    instance = new MySQLDatabaseConnection(databaseHost, databasePort, databaseName, databaseUsername, databasePassword);
+                    instance = new DatabaseConnectionMySQL(databaseHost, databasePort, databaseName, databaseUsername, databasePassword);
                 }
             } finally {
                 LOCK.unlock();

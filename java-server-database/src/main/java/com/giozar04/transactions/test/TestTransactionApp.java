@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
-import com.giozar04.databases.infrastructure.MySQLDatabaseConnection;
+import com.giozar04.databases.infrastructure.repositories.DatabaseConnectionMySQL;
 import com.giozar04.transactions.application.services.TransactionService;
 import com.giozar04.transactions.domain.entities.Transaction;
 import com.giozar04.transactions.domain.enums.PaymentMethod;
@@ -31,7 +31,7 @@ public class TestTransactionApp {
         
         try {
             // Inicializar conexión a la base de datos
-            DatabaseConnectionInterface dbConnection = MySQLDatabaseConnection.getInstance(
+            DatabaseConnectionInterface dbConnection = DatabaseConnectionMySQL.getInstance(
                 DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD);
             
             // Conectar a la base de datos
