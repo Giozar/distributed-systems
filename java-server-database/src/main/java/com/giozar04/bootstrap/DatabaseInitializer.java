@@ -2,7 +2,7 @@ package com.giozar04.bootstrap;
 
 import com.giozar04.configs.DatabaseConfig;
 import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
-import com.giozar04.databases.infrastructure.MySQLDatabaseConnection;
+import com.giozar04.databases.infrastructure.repositories.DatabaseConnectionMySQL;
 import com.giozar04.shared.logging.CustomLogger;
 
 public class DatabaseInitializer {
@@ -15,7 +15,7 @@ public class DatabaseInitializer {
     }
 
     public DatabaseConnectionInterface initialize() {
-        DatabaseConnectionInterface connection = MySQLDatabaseConnection.getInstance(
+        DatabaseConnectionInterface connection = DatabaseConnectionMySQL.getInstance(
                 dbConfig.getHost(),
                 dbConfig.getPort(),
                 dbConfig.getName(),
