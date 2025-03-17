@@ -3,8 +3,10 @@ package com.giozar04.servers.domain.models;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.giozar04.servers.domain.exceptions.ServerOperationException;
@@ -19,11 +21,14 @@ public abstract class ServerAbstract implements ServerInterface {
 
     protected static final ReentrantLock LOCK = new ReentrantLock();
     protected ServerSocket serverSocket;
-    protected String serverHost;
-    protected int serverPort;
+    protected final String serverHost;
+    protected final int serverPort;
     protected volatile boolean isRunning;
     protected final ExecutorService threadPool;
     protected final CustomLogger logger;
+    protected final AtomicInteger connectedClientsCount = new AtomicInteger(0);
+    // Generador único de identificadores para clientes
+    protected final AtomicInteger clientIdGenerator = new AtomicInteger(0);
 
     /**
      * Constructor para inicializar un servidor abstracto.
@@ -59,7 +64,6 @@ public abstract class ServerAbstract implements ServerInterface {
 
     /**
      * Método base para iniciar el servidor.
-     * Las clases derivadas deben llamar a este método y extender su funcionalidad.
      *
      * @throws ServerOperationException si ocurre un error al iniciar el servidor.
      * @throws IOException si ocurre un error de E/S durante la operación.
@@ -71,11 +75,9 @@ public abstract class ServerAbstract implements ServerInterface {
                 logger.info("El servidor ya está en ejecución en " + serverHost + ":" + serverPort);
                 return;
             }
-            
             InetAddress address = InetAddress.getByName(serverHost);
             serverSocket = new ServerSocket(serverPort, 50, address);
             isRunning = true;
-            
             logger.info("Servidor iniciado en " + serverHost + ":" + serverPort);
         } catch (IOException e) {
             logger.error("Error al iniciar el servidor: " + e.getMessage(), e);
@@ -87,7 +89,6 @@ public abstract class ServerAbstract implements ServerInterface {
 
     /**
      * Método base para detener el servidor.
-     * Las clases derivadas deben llamar a este método y extender su funcionalidad.
      *
      * @throws ServerOperationException si ocurre un error al detener el servidor.
      */
@@ -98,7 +99,6 @@ public abstract class ServerAbstract implements ServerInterface {
                 logger.info("El servidor ya está detenido");
                 return;
             }
-            
             if (serverSocket != null && !serverSocket.isClosed()) {
                 try {
                     serverSocket.close();
@@ -108,16 +108,123 @@ public abstract class ServerAbstract implements ServerInterface {
                     throw new ServerOperationException("Error al detener el servidor", e);
                 }
             }
-            
             isRunning = false;
         } finally {
             LOCK.unlock();
         }
     }
-    
+
+    /**
+     * Inicia el servidor y lanza en un hilo separado la aceptación de conexiones.
+     *
+     * @throws ServerOperationException si ocurre un error al iniciar el servidor.
+     * @throws IOException si ocurre un error de E/S durante la operación.
+     */
+    @Override
+    public void startServer() throws ServerOperationException, IOException {
+        baseStartServer();
+        // Inicia la tarea de aceptación de conexiones en un hilo separado
+        threadPool.submit(() -> {
+            try {
+                acceptClientSocketConnections();
+            } catch (ServerOperationException | IOException e) {
+                logger.error("Error en el loop de aceptación de clientes: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Detiene el servidor.
+     *
+     * @throws ServerOperationException si ocurre un error al detener el servidor.
+     */
+    @Override
+    public void stopServer() throws ServerOperationException {
+        baseStopServer();
+    }
+
+    /**
+     * Reinicia el servidor (detiene y vuelve a iniciar).
+     *
+     * @throws ServerOperationException si ocurre un error durante el reinicio.
+     * @throws IOException si ocurre un error de E/S durante la operación.
+     */
+    @Override
+    public void restartServer() throws ServerOperationException, IOException {
+        stopServer();
+        startServer();
+    }
+
+    /**
+     * Indica si el servidor está en ejecución.
+     *
+     * @return true si el servidor está ejecutándose, false en caso contrario.
+     * @throws ServerOperationException si ocurre un error al obtener el estado.
+     */
+    @Override
+    public boolean isServerRunning() throws ServerOperationException {
+        return isRunning;
+    }
+
+    /**
+     * Acepta conexiones entrantes de clientes en un bucle.
+     * Por cada conexión aceptada, se delega el manejo a handleClientSocket en un hilo separado.
+     *
+     * @throws ServerOperationException si ocurre un error al aceptar conexiones.
+     * @throws IOException si ocurre un error de E/S durante la operación.
+     */
+    @Override
+    public void acceptClientSocketConnections() throws ServerOperationException, IOException {
+        while (isServerRunning()) {
+            try {
+                // Asigna un identificador único al cliente
+                Socket socket = serverSocket.accept();
+                ClientSocket clientSocket = new ClientSocket(socket, clientIdGenerator.incrementAndGet());
+                connectedClientsCount.incrementAndGet();
+                // Maneja el cliente en un hilo separado
+                threadPool.submit(() -> {
+                    try {
+                        handleClientSocket(clientSocket);
+                    } catch (ServerOperationException e) {
+                        logger.error("Error al manejar el cliente: " + e.getMessage(), e);
+                    } finally {
+                        connectedClientsCount.decrementAndGet();
+                    }
+                });
+            } catch (IOException e) {
+                // Si el servidor sigue en ejecución, reporta el error
+                if (isServerRunning()) {
+                    logger.error("Error al aceptar conexión de cliente: " + e.getMessage(), e);
+                }
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Retorna el número de clientes actualmente conectados.
+     *
+     * @return El número de clientes conectados.
+     * @throws ServerOperationException si ocurre un error al obtener el conteo.
+     */
+    @Override
+    public int getConnectedClientSocketsCount() throws ServerOperationException {
+        return connectedClientsCount.get();
+    }
+
+    /**
+     * Método abstracto para manejar la conexión de un cliente.
+     * Las subclases deben proporcionar la implementación específica.
+     *
+     * @param clientSocket El cliente a manejar.
+     * @throws ServerOperationException si ocurre un error al manejar el cliente.
+     */
+    @Override
+    public abstract void handleClientSocket(ClientSocket clientSocket) throws ServerOperationException;
+
     /**
      * Cierra los recursos del servidor.
-     * 
+     *
      * @throws Exception si ocurre un error al cerrar los recursos.
      */
     @Override
