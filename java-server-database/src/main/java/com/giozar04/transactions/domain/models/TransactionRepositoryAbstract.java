@@ -12,7 +12,7 @@ import com.giozar04.transactions.domain.interfaces.TransactionRepositoryInterfac
  * Clase base abstracta para los repositorios de transacciones.
  * Proporciona funcionalidad común para todas las implementaciones de repositorios.
  */
-public abstract class TransactionRepository implements TransactionRepositoryInterface {
+public abstract class TransactionRepositoryAbstract implements TransactionRepositoryInterface {
     
     // Conexión a la base de datos (inyectada mediante constructor)
     protected final DatabaseConnectionInterface databaseConnection;
@@ -26,7 +26,7 @@ public abstract class TransactionRepository implements TransactionRepositoryInte
      * @param databaseConnection la conexión a la base de datos
      * @throws NullPointerException si databaseConnection es null
      */
-    protected TransactionRepository(DatabaseConnectionInterface databaseConnection) {
+    protected TransactionRepositoryAbstract(DatabaseConnectionInterface databaseConnection) {
         this.databaseConnection = Objects.requireNonNull(databaseConnection, 
                 "La conexión a la base de datos no puede ser nula");
         this.logger = new CustomLogger();

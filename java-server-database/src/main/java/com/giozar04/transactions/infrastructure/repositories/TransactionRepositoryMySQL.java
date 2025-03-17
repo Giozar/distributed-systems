@@ -15,13 +15,13 @@ import com.giozar04.databases.domain.interfaces.DatabaseConnectionInterface;
 import com.giozar04.transactions.domain.classes.TransactionExceptions;
 import com.giozar04.transactions.domain.entities.Transaction;
 import com.giozar04.transactions.domain.enums.PaymentMethod;
-import com.giozar04.transactions.domain.models.TransactionRepository;
+import com.giozar04.transactions.domain.models.TransactionRepositoryAbstract;
 
 /**
  * Implementación MySQL del repositorio de transacciones.
  * Maneja operaciones CRUD para entidades Transaction en una base de datos MySQL.
  */
-public class TransactionRepositoryMySQL extends TransactionRepository {
+public class TransactionRepositoryMySQL extends TransactionRepositoryAbstract {
 
     // Consultas SQL como constantes para mejor mantenibilidad
     private static final String SQL_INSERT = "INSERT INTO transactions (type, payment_method, amount, title, category, description, comments, date, timezone, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
