@@ -7,13 +7,13 @@ import java.sql.SQLException;
 import com.giozar04.databases.domain.exceptions.DatabaseExceptions;
 import com.giozar04.databases.domain.exceptions.DatabaseExceptions.ConnectionException;
 import com.giozar04.databases.domain.exceptions.DatabaseExceptions.DriverException;
-import com.giozar04.databases.domain.models.DatabaseConnection;
+import com.giozar04.databases.domain.models.DatabaseConnectionAbstract;
 
 /**
  * Implementación mejorada de conexión a MySQL con manejo de excepciones
  * personalizadas.
  */
-public class MySQLDatabaseConnection extends DatabaseConnection {
+public class MySQLDatabaseConnection extends DatabaseConnectionAbstract {
 
     // Instancia única (patrón Singleton)
     private static volatile MySQLDatabaseConnection instance;

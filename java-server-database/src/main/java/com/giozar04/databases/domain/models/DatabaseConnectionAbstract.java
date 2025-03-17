@@ -13,7 +13,7 @@ import com.giozar04.shared.logging.CustomLogger;
  * Clase abstracta que implementa funcionalidad común para conexiones a bases de datos.
  * Proporciona una implementación base para el patrón repositorio.
  */
-public abstract class DatabaseConnection implements DatabaseConnectionInterface {
+public abstract class DatabaseConnectionAbstract implements DatabaseConnectionInterface {
     
     // Lock para garantizar thread-safety durante la inicialización
     protected static final ReentrantLock LOCK = new ReentrantLock();
@@ -50,7 +50,7 @@ public abstract class DatabaseConnection implements DatabaseConnectionInterface 
      * @param databasePassword la contraseña para la conexión
      */
     @SuppressWarnings("OverridableMethodCallInConstructor")
-    protected DatabaseConnection(String databaseHost, String databasePort, String databaseName, 
+    protected DatabaseConnectionAbstract(String databaseHost, String databasePort, String databaseName, 
                                       String databaseUsername, String databasePassword) {
         // Validar parámetros de entrada
         this.databaseHost = Objects.requireNonNull(databaseHost, "El databaseHost no puede ser nulo");
