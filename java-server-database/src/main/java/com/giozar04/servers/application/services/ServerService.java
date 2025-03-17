@@ -10,11 +10,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.giozar04.servers.domain.classes.AbstractServer;
 import com.giozar04.servers.domain.exceptions.ServerOperationException;
 import com.giozar04.servers.domain.handlers.MessageHandler;
 import com.giozar04.servers.domain.models.ClientSocket;
 import com.giozar04.servers.domain.models.Message;
+import com.giozar04.servers.domain.models.ServerAbstract;
 import com.giozar04.shared.logging.CustomLogger;
 
 /**
@@ -22,7 +22,7 @@ import com.giozar04.shared.logging.CustomLogger;
  * Garantiza que solo exista una instancia del servidor en toda la aplicación.
  * Incluye manejo automático de recursos con ShutdownHook y procesamiento de mensajes.
  */
-public class ServerService extends AbstractServer {
+public class ServerService extends ServerAbstract {
 
     // Instancia única del Singleton
     private static volatile ServerService instance;

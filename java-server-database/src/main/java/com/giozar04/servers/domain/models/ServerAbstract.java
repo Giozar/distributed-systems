@@ -1,4 +1,4 @@
-package com.giozar04.servers.domain.classes;
+package com.giozar04.servers.domain.models;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -15,7 +15,7 @@ import com.giozar04.shared.logging.CustomLogger;
  * Implementación base para servidores de sockets.
  * Proporciona funcionalidad común y estructura para implementaciones específicas.
  */
-public abstract class AbstractServer implements ServerInterface {
+public abstract class ServerAbstract implements ServerInterface {
 
     protected static final ReentrantLock LOCK = new ReentrantLock();
     protected ServerSocket serverSocket;
@@ -35,7 +35,7 @@ public abstract class AbstractServer implements ServerInterface {
      * @throws NullPointerException si algún parámetro requerido es nulo.
      * @throws IllegalArgumentException si el puerto está fuera del rango válido.
      */
-    protected AbstractServer(String serverHost, int serverPort, ExecutorService threadPool, CustomLogger logger) {
+    protected ServerAbstract(String serverHost, int serverPort, ExecutorService threadPool, CustomLogger logger) {
         this.serverHost = Objects.requireNonNull(serverHost, "El serverHost no puede ser nulo");
         if (serverPort < 0 || serverPort > 65535) {
             throw new IllegalArgumentException("El puerto debe estar entre 0 y 65535");
@@ -53,7 +53,7 @@ public abstract class AbstractServer implements ServerInterface {
      * @param serverPort El puerto en el que escuchará el servidor.
      * @param threadPool El pool de hilos para manejar conexiones de clientes.
      */
-    protected AbstractServer(String serverHost, int serverPort, ExecutorService threadPool) {
+    protected ServerAbstract(String serverHost, int serverPort, ExecutorService threadPool) {
         this(serverHost, serverPort, threadPool, new CustomLogger());
     }
 
