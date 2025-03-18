@@ -1,12 +1,14 @@
 package com.giozar04.transactions.domain.entities;
 
+import java.io.Serializable; // Se importa Serializable
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.giozar04.transactions.domain.enums.PaymentMethod;
 
-public class Transaction {
+public class Transaction implements Serializable { // Se implementa Serializable
+    private static final long serialVersionUID = 1L; // Versión de serialización
 
     private long id;
     private String type; // "INCOME" o "EXPENSE"

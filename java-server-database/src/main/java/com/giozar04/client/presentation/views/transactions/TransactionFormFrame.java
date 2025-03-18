@@ -7,6 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import com.giozar04.client.application.services.ClientService;
 import com.giozar04.client.presentation.components.DatePickerComponent;
 import com.giozar04.client.presentation.validators.TransactionValidator;
 import com.giozar04.transactions.application.utils.TransactionUtils;
@@ -53,12 +55,15 @@ public class TransactionFormFrame extends JFrame {
     
     // Validador para el formulario
     private final TransactionValidator validator;
+    
+    // Referencia al servicio de cliente para comunicarse con el servidor
+    private final ClientService clientService;
 
     /**
-     * Constructor del formulario de transacción.
+     * Constructor que recibe la instancia de ClientService.
      */
-    public TransactionFormFrame() {
-        // Inicializar validador
+    public TransactionFormFrame(ClientService clientService) {
+        this.clientService = clientService;
         validator = new TransactionValidator();
         
         // Configurar la ventana
@@ -228,14 +233,9 @@ public class TransactionFormFrame extends JFrame {
         
         btnClear = new JButton("Limpiar");
         
-        // Configurar las acciones de los botones
-        btnSubmit.addActionListener((ActionEvent e) -> {
-            saveTransaction();
-        });
-        
-        btnClear.addActionListener((ActionEvent e) -> {
-            clearForm();
-        });
+        // Acción de los botones
+        btnSubmit.addActionListener((ActionEvent e) -> saveTransaction());
+        btnClear.addActionListener((ActionEvent e) -> clearForm());
         
         panel.add(btnSubmit);
         panel.add(btnClear);
@@ -244,7 +244,7 @@ public class TransactionFormFrame extends JFrame {
     }
     
     /**
-     * Valida y guarda la transacción.
+     * Valida y envía la transacción al servidor.
      */
     private void saveTransaction() {
         // Limpiar errores previos
@@ -305,33 +305,15 @@ public class TransactionFormFrame extends JFrame {
         // Convertir el Map a una entidad Transaction usando TransactionUtils
         Transaction transaction = TransactionUtils.mapToTransaction(transactionData);
         
-        // Aquí se guardaría la transacción en un repositorio o servicio
-        // Por ahora solo mostramos un mensaje de éxito
-        JOptionPane.showMessageDialog(this, 
-            """
-            Transacción creada correctamente:
-
-            Título: %s
-            Tipo: %s
-            Método de Pago: %s
-            Monto: %s
-            Categoría: %s
-            Fecha: %s
-            Descripción: %s
-            Comentarios: %s
-            Tags: %s""".formatted(
-                transaction.getTitle(),
-                transaction.getType(),
-                transaction.getPaymentMethod(),
-                transaction.getAmount(),
-                transaction.getCategory(),
-                transaction.getDate() != null ? transaction.getDate().format(TransactionUtils.getFormatter()) : "No especificada",
-                transaction.getDescription(),
-                transaction.getComments(),
-                transaction.getTags() != null ? String.join(", ", transaction.getTags()) : ""),
-            "Transacción Guardada",
-            JOptionPane.INFORMATION_MESSAGE
-        );
+        try {
+            // Llamamos al método del ClientService para enviar la transacción al servidor
+            clientService.sendTransaction(transaction);
+            JOptionPane.showMessageDialog(this, "Transacción enviada al servidor correctamente.", 
+                    "Transacción Enviada", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al enviar la transacción: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
         
         // Limpiar el formulario después de guardar
         clearForm();
