@@ -2,6 +2,7 @@ package concurrence.server.application;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -9,8 +10,6 @@ import concurrence.server.domain.Client;
 import concurrence.server.domain.ClientRepository;
 import concurrence.server.domain.ServerExceptions;
 import concurrence.shared.Logger;
-
-import java.net.Socket;
 
 public class ServerService {
 
@@ -85,9 +84,9 @@ public class ServerService {
     private void acceptConnections(){
         while( running ) {
             try {
-                Socket clientSocket = serverSocket.accept();
+                Socket clientConnection = serverSocket.accept();
                 int clientId = clientRepository.getClientCount() + 1;
-                Client client = new Client(clientSocket, clientId);
+                Client client = new Client(clientConnection, clientId);
                 clientRepository.addClient(client);
                 logger.info("Cliente conectado:" + clientId + ". Total de clientes: " + clientRepository.getClientCount());
                 threadPool.execute(() -> handleClient(client));

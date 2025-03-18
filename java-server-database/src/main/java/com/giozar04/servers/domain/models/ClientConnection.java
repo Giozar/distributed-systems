@@ -8,19 +8,19 @@ import java.util.Objects;
  * Representa un cliente conectado al servidor.
  * Esta clase encapsula un socket de cliente junto con su información de identificación.
  */
-public class ClientSocket {
+public class ClientConnection {
     private final Socket socket;
     private final int id;
     private final LocalDateTime connectionTime;
 
     /**
-     * Crea una nueva instancia de ClientSocket.
+     * Crea una nueva instancia de ClientConnection.
      *
      * @param socket El socket de la conexión del cliente.
      * @param id El identificador único del cliente.
      * @throws NullPointerException si el socket es nulo.
      */
-    public ClientSocket(Socket socket, int id) {
+    public ClientConnection(Socket socket, int id) {
         this.socket = Objects.requireNonNull(socket, "El socket no puede ser nulo");
         this.id = id;
         this.connectionTime = LocalDateTime.now();

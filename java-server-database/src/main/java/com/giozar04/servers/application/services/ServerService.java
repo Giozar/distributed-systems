@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.giozar04.servers.domain.exceptions.ServerOperationException;
 import com.giozar04.servers.domain.handlers.MessageHandler;
-import com.giozar04.servers.domain.models.ClientSocket;
+import com.giozar04.servers.domain.models.ClientConnection;
 import com.giozar04.servers.domain.models.Message;
 import com.giozar04.servers.domain.models.ServerAbstract;
 import com.giozar04.shared.logging.CustomLogger;
@@ -26,7 +26,7 @@ public class ServerService extends ServerAbstract {
     private static volatile ServerService instance;
     
     // Mapa para almacenar los clientes conectados
-    private final Map<Integer, ClientSocket> connectedClients;
+    private final Map<Integer, ClientConnection> connectedClients;
     
     // Mapa para almacenar los manejadores de mensajes según su tipo
     private final Map<String, MessageHandler> messageHandlers;
@@ -96,7 +96,7 @@ public class ServerService extends ServerAbstract {
     private void registerShutdownHook() {
         if (!shutdownHookRegistered) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                logger.info("Apagando servidor y liberando recursos...");
+                logger.info("Apagando el servidor y liberando recursos...");
                 try {
                     if (isServerRunning()) {
                         stopServer();
@@ -117,7 +117,7 @@ public class ServerService extends ServerAbstract {
                 logger.info("Servidor detenido y recursos liberados correctamente");
             }));
             shutdownHookRegistered = true;
-            logger.info("ShutdownHook registrado para limpieza de recursos");
+            logger.info("ShutdownHook registrado para la limpieza de recursos");
         }
     }
 
@@ -128,13 +128,13 @@ public class ServerService extends ServerAbstract {
         threadPool.submit(() -> {
             try {
                 while (isRunning) {
-                    acceptClientSocketConnections();
+                    acceptClientConnections();
                 }
             } catch (ServerOperationException | IOException e) {
-                logger.error("Error en el bucle de aceptación de conexiones", e);
+                logger.error("Error en el ciclo de aceptación de conexiones: ", e);
             }
         });
-        logger.info("Servidor listo para aceptar conexiones");
+        logger.info("Servidor listo para aceptar conexiones entrantes");
     }
 
     @Override
@@ -156,7 +156,7 @@ public class ServerService extends ServerAbstract {
 
     @Override
     public void restartServer() throws ServerOperationException, IOException {
-        logger.info("Reiniciando servidor...");
+        logger.info("Reiniciando el servidor...");
         stopServer();
         startServer();
         logger.info("Servidor reiniciado correctamente");
@@ -169,33 +169,33 @@ public class ServerService extends ServerAbstract {
 
     /**
      * Maneja la aceptación de una conexión entrante.
-     * Este método acepta una conexión y delega su procesamiento a handleClientSocket.
+     * Este método acepta una conexión y delega su procesamiento a handleClientConnection.
      */
     @Override
-    public void acceptClientSocketConnections() throws ServerOperationException, IOException {
+    public void acceptClientConnections() throws ServerOperationException, IOException {
         if (!isServerRunning() || serverSocket == null || serverSocket.isClosed()) {
             throw new ServerOperationException("El servidor no está en ejecución");
         }
         try {
             logger.info("Esperando nueva conexión de cliente...");
-            Socket clientConnection = serverSocket.accept();
+            Socket socket = serverSocket.accept();
             // Se utiliza el contador heredado para asignar un ID único
             int clientId = clientIdGenerator.incrementAndGet();
-            ClientSocket clientSocket = new ClientSocket(clientConnection, clientId);
+            ClientConnection clientConnection = new ClientConnection(socket, clientId);
             // Delegar el manejo de la conexión
-            handleClientSocket(clientSocket);
+            handleClientConnection(clientConnection);
         } catch (IOException e) {
             if (isServerRunning()) {
-                logger.error("Error al aceptar conexión de cliente", e);
+                logger.error("Error al aceptar la conexión de un cliente", e);
                 throw e;
             } else {
-                logger.info("Servidor detenido mientras esperaba conexiones");
+                logger.info("El servidor fue detenido mientras se esperaba una conexión");
             }
         }
     }
 
     @Override
-    public int getConnectedClientSocketsCount() {
+    public int getConnectedClientsCount() {
         return connectedClients.size();
     }
 
@@ -204,28 +204,28 @@ public class ServerService extends ServerAbstract {
      * Se registra el cliente y se procesa la comunicación en un hilo separado.
      */
     @Override
-    public void handleClientSocket(ClientSocket clientSocket) throws ServerOperationException {
-        if (clientSocket == null) {
-            logger.warn("Se recibió un clientSocket nulo, ignorando");
+    public void handleClientConnection(ClientConnection clientConnection) throws ServerOperationException {
+        if (clientConnection == null) {
+            logger.warn("Se recibió una conexión nula, ignorando");
             return;
         }
         // Registrar el cliente en el mapa de conectados
-        connectedClients.put(clientSocket.getId(), clientSocket);
-        logger.info("Cliente " + clientSocket.getId() + " conectado desde " +
-                   clientSocket.getSocket().getInetAddress().getHostAddress());
+        connectedClients.put(clientConnection.getId(), clientConnection);
+        logger.info("Cliente " + clientConnection.getId() + " conectado desde " +
+                   clientConnection.getSocket().getInetAddress().getHostAddress());
 
         threadPool.submit(() -> {
             ObjectInputStream in = null;
             ObjectOutputStream out = null;
             try {
-                Socket socket = clientSocket.getSocket();
+                Socket socket = clientConnection.getSocket();
                 // Configurar streams para comunicación de objetos
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
                 
                 // Enviar mensaje de bienvenida
                 Message welcomeMessage = Message.createSuccessMessage("WELCOME",
-                        "Conexión establecida. Cliente ID: " + clientSocket.getId());
+                        "Conexión establecida. Cliente ID: " + clientConnection.getId());
                 out.writeObject(welcomeMessage);
                 out.flush();
                 
@@ -234,9 +234,9 @@ public class ServerService extends ServerAbstract {
                     Object receivedObj = in.readObject();
                     if (receivedObj instanceof Message) {
                         Message receivedMessage = (Message) receivedObj;
-                        logger.info("Mensaje recibido del cliente " + clientSocket.getId() +
+                        logger.info("Mensaje recibido del cliente " + clientConnection.getId() +
                                    ": " + receivedMessage.getType());
-                        processMessage(clientSocket, receivedMessage, out);
+                        processMessage(clientConnection, receivedMessage, out);
                     } else {
                         logger.warn("Mensaje recibido no es del tipo esperado: " +
                                     (receivedObj != null ? receivedObj.getClass().getName() : "null"));
@@ -246,24 +246,24 @@ public class ServerService extends ServerAbstract {
                     }
                 }
             } catch (ClassNotFoundException e) {
-                logger.error("Error de serialización al procesar mensaje del cliente " + clientSocket.getId(), e);
+                logger.error("Error de serialización al procesar mensaje del cliente " + clientConnection.getId(), e);
             } catch (IOException e) {
-                logger.info("Cliente " + clientSocket.getId() + " desconectado: " + e.getMessage());
+                logger.info("Cliente " + clientConnection.getId() + " desconectado: " + e.getMessage());
             } catch (Exception e) {
-                logger.error("Error inesperado al manejar el cliente " + clientSocket.getId(), e);
+                logger.error("Error inesperado al manejar el cliente " + clientConnection.getId(), e);
             } finally {
                 // Liberar recursos y eliminar al cliente del registro
                 try {
                     if (in != null) in.close();
                     if (out != null) out.close();
-                    if (!clientSocket.getSocket().isClosed()) {
-                        clientSocket.getSocket().close();
+                    if (!clientConnection.getSocket().isClosed()) {
+                        clientConnection.getSocket().close();
                     }
                 } catch (IOException e) {
-                    logger.error("Error al cerrar recursos del cliente " + clientSocket.getId(), e);
+                    logger.error("Error al cerrar recursos del cliente " + clientConnection.getId(), e);
                 }
-                connectedClients.remove(clientSocket.getId());
-                logger.info("Cliente " + clientSocket.getId() + " eliminado del registro");
+                connectedClients.remove(clientConnection.getId());
+                logger.info("Cliente " + clientConnection.getId() + " eliminado del registro");
             }
         });
     }
@@ -271,22 +271,22 @@ public class ServerService extends ServerAbstract {
     /**
      * Procesa un mensaje recibido utilizando el manejador correspondiente.
      */
-    private void processMessage(ClientSocket clientSocket, Message message, ObjectOutputStream out) throws IOException {
+    private void processMessage(ClientConnection clientConnection, Message message, ObjectOutputStream out) throws IOException {
         String messageType = message.getType();
         MessageHandler handler = messageHandlers.get(messageType);
         
         if (handler != null) {
             try {
-                Message response = handler.handleMessage(clientSocket, message);
+                Message response = handler.handleMessage(clientConnection, message);
                 if (response != null) {
                     out.writeObject(response);
                     out.flush();
-                    logger.info("Respuesta enviada al cliente " + clientSocket.getId() +
+                    logger.info("Respuesta enviada al cliente " + clientConnection.getId() +
                                " para mensaje tipo: " + messageType);
                 }
             } catch (Exception e) {
                 logger.error("Error al procesar mensaje tipo '" + messageType +
-                           "' del cliente " + clientSocket.getId(), e);
+                           "' del cliente " + clientConnection.getId(), e);
                 Message errorResponse = Message.createErrorMessage(messageType, "Error al procesar solicitud: " + e.getMessage());
                 out.writeObject(errorResponse);
                 out.flush();
@@ -304,12 +304,12 @@ public class ServerService extends ServerAbstract {
      */
     public void sendMessageToClient(int clientId, Message message)
             throws IOException, ServerOperationException {
-        ClientSocket clientSocket = connectedClients.get(clientId);
-        if (clientSocket == null) {
+        ClientConnection clientConnection = connectedClients.get(clientId);
+        if (clientConnection == null) {
             throw new ServerOperationException("Cliente con ID " + clientId + " no encontrado");
         }
         try {
-            Socket socket = clientSocket.getSocket();
+            Socket socket = clientConnection.getSocket();
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(message);
             out.flush();
@@ -324,17 +324,17 @@ public class ServerService extends ServerAbstract {
      * Envía un mensaje a todos los clientes conectados.
      */
     public void broadcastMessage(Message message) {
-        connectedClients.values().forEach(clientSocket -> {
+        connectedClients.values().forEach(clientConnection -> {
             try {
-                Socket socket = clientSocket.getSocket();
+                Socket socket = clientConnection.getSocket();
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                 out.writeObject(message);
                 out.flush();
             } catch (IOException e) {
-                logger.error("Error al enviar mensaje de broadcast al cliente " + clientSocket.getId(), e);
+                logger.error("Error al enviar mensaje de broadcast al cliente " + clientConnection.getId(), e);
             }
         });
-        logger.info("Mensaje broadcast enviado a " + connectedClients.size() +
+        logger.info("Mensaje de broadcast enviado a " + connectedClients.size() +
                   " clientes: " + message.getType());
     }
     

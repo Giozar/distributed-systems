@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.giozar04.servers.domain.handlers.MessageHandler;
-import com.giozar04.servers.domain.models.ClientSocket;
+import com.giozar04.servers.domain.models.ClientConnection;
 import com.giozar04.servers.domain.models.Message;
 import com.giozar04.shared.logging.CustomLogger;
 import com.giozar04.transactions.application.services.TransactionService;
@@ -38,7 +38,7 @@ public class TransactionHandlers {
      * @return Un manejador para mensajes de creación de transacciones.
      */
     public static MessageHandler createTransactionHandler(TransactionService transactionService) {
-        return (ClientSocket clientSocket, Message message) -> {
+        return (ClientConnection clientConnection, Message message) -> {
             LOGGER.info("Procesando solicitud de creación de transacción");
             
             // Extraer datos de la transacción del mensaje
@@ -74,7 +74,7 @@ public class TransactionHandlers {
      * @return Un manejador para mensajes de obtención de transacciones.
      */
     public static MessageHandler getTransactionHandler(TransactionService transactionService) {
-        return (ClientSocket clientSocket, Message message) -> {
+        return (ClientConnection clientConnection, Message message) -> {
             LOGGER.info("Procesando solicitud de obtención de transacción");
             
             // Extraer ID de la transacción del mensaje
@@ -106,7 +106,7 @@ public class TransactionHandlers {
      * @return Un manejador para mensajes de actualización de transacciones.
      */
     public static MessageHandler updateTransactionHandler(TransactionService transactionService) {
-        return (ClientSocket clientSocket, Message message) -> {
+        return (ClientConnection clientConnection, Message message) -> {
             LOGGER.info("Procesando solicitud de actualización de transacción");
             
             // Extraer ID de la transacción del mensaje
@@ -149,7 +149,7 @@ public class TransactionHandlers {
      * @return Un manejador para mensajes de eliminación de transacciones.
      */
     public static MessageHandler deleteTransactionHandler(TransactionService transactionService) {
-        return (ClientSocket clientSocket, Message message) -> {
+        return (ClientConnection clientConnection, Message message) -> {
             LOGGER.info("Procesando solicitud de eliminación de transacción");
             
             // Extraer ID de la transacción del mensaje
@@ -177,7 +177,7 @@ public class TransactionHandlers {
      */
     @SuppressWarnings("unchecked")
     public static MessageHandler getAllTransactionsHandler(TransactionService transactionService) {
-        return (ClientSocket clientSocket, Message message) -> {
+        return (ClientConnection clientConnection, Message message) -> {
             LOGGER.info("Procesando solicitud de obtención de todas las transacciones");
             
             // Obtener todas las transacciones usando el servicio

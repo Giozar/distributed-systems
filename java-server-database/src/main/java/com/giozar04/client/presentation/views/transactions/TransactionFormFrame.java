@@ -27,7 +27,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
-import com.giozar04.client.application.services.ClientService;
+import com.giozar04.client.application.services.ServerConnection;
 import com.giozar04.client.presentation.components.DatePickerComponent;
 import com.giozar04.client.presentation.validators.TransactionValidator;
 import com.giozar04.transactions.application.utils.TransactionUtils;
@@ -57,13 +57,13 @@ public class TransactionFormFrame extends JFrame {
     private final TransactionValidator validator;
     
     // Referencia al servicio de cliente para comunicarse con el servidor
-    private final ClientService clientService;
+    private final ServerConnection serverConnection;
 
     /**
      * Constructor que recibe la instancia de ClientService.
      */
-    public TransactionFormFrame(ClientService clientService) {
-        this.clientService = clientService;
+    public TransactionFormFrame(ServerConnection serverConnection) {
+        this.serverConnection = serverConnection;
         validator = new TransactionValidator();
         
         // Configurar la ventana
@@ -307,8 +307,8 @@ public class TransactionFormFrame extends JFrame {
         
         try {
             // Llamamos al método del ClientService para enviar la transacción al servidor
-            clientService.sendTransaction(transaction);
-            JOptionPane.showMessageDialog(this, "Transacción enviada al servidor correctamente.", 
+            serverConnection.sendTransaction(transaction);
+            JOptionPane.showMessageDialog(this, "Transacción enviada correctamente al servidor.", 
                     "Transacción Enviada", JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Error al enviar la transacción: " + e.getMessage(),

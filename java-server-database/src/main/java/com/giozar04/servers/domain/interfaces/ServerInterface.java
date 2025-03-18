@@ -3,7 +3,7 @@ package com.giozar04.servers.domain.interfaces;
 import java.io.IOException;
 
 import com.giozar04.servers.domain.exceptions.ServerOperationException;
-import com.giozar04.servers.domain.models.ClientSocket;
+import com.giozar04.servers.domain.models.ClientConnection;
 
 /**
  * Define las operaciones fundamentales para un servidor de sockets.
@@ -19,9 +19,9 @@ public interface ServerInterface extends AutoCloseable {
     
     boolean isServerRunning() throws ServerOperationException;
     
-    void handleClientSocket(ClientSocket clientSocket) throws ServerOperationException;
-    
-    void acceptClientSocketConnections() throws ServerOperationException, IOException;
-    
-    int getConnectedClientSocketsCount() throws ServerOperationException;
+    void handleClientConnection(ClientConnection clientConnection) throws ServerOperationException;
+
+    void acceptClientConnections() throws ServerOperationException, IOException;
+
+    int getConnectedClientsCount() throws ServerOperationException;
 }

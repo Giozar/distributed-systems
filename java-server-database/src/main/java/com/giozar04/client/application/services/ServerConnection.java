@@ -13,7 +13,7 @@ import com.giozar04.transactions.domain.entities.Transaction;
  * ClientService se encarga de gestionar la conexión y comunicación con el servidor vía sockets.
  * Mantiene la conexión activa, envía mensajes y escucha respuestas.
  */
-public class ClientService {
+public class ServerConnection {
 
     private Socket socket;
     private ObjectOutputStream out;
@@ -22,7 +22,7 @@ public class ClientService {
     private final int serverPort;
     private volatile boolean isConnected;
 
-    public ClientService(String serverHost, int serverPort) {
+    public ServerConnection(String serverHost, int serverPort) {
         this.serverHost = serverHost;
         this.serverPort = serverPort;
         this.isConnected = false;

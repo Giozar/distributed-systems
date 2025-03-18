@@ -72,13 +72,13 @@ public abstract class ServerAbstract implements ServerInterface {
         LOCK.lock();
         try {
             if (isRunning) {
-                logger.info("El servidor ya está en ejecución en " + serverHost + ":" + serverPort);
+                logger.info("El servidor ya se encuentra activo en " + serverHost + ":" + serverPort);
                 return;
             }
             InetAddress address = InetAddress.getByName(serverHost);
             serverSocket = new ServerSocket(serverPort, 50, address);
             isRunning = true;
-            logger.info("Servidor iniciado en " + serverHost + ":" + serverPort);
+            logger.info("Servidor iniciado correctamente en " + serverHost + ":" + serverPort);
         } catch (IOException e) {
             logger.error("Error al iniciar el servidor: " + e.getMessage(), e);
             throw e;
@@ -96,7 +96,7 @@ public abstract class ServerAbstract implements ServerInterface {
         LOCK.lock();
         try {
             if (!isRunning) {
-                logger.info("El servidor ya está detenido");
+                logger.info("El servidor ya se encuentra detenido");
                 return;
             }
             if (serverSocket != null && !serverSocket.isClosed()) {
@@ -126,9 +126,9 @@ public abstract class ServerAbstract implements ServerInterface {
         // Inicia la tarea de aceptación de conexiones en un hilo separado
         threadPool.submit(() -> {
             try {
-                acceptClientSocketConnections();
+                acceptClientConnections();
             } catch (ServerOperationException | IOException e) {
-                logger.error("Error en el loop de aceptación de clientes: " + e.getMessage(), e);
+                logger.error("Error en el ciclo de aceptación de conexiones: " + e.getMessage(), e);
             }
         });
     }
@@ -168,23 +168,23 @@ public abstract class ServerAbstract implements ServerInterface {
 
     /**
      * Acepta conexiones entrantes de clientes en un bucle.
-     * Por cada conexión aceptada, se delega el manejo a handleClientSocket en un hilo separado.
+     * Por cada conexión aceptada, se delega el manejo a handleClientConnection en un hilo separado.
      *
      * @throws ServerOperationException si ocurre un error al aceptar conexiones.
      * @throws IOException si ocurre un error de E/S durante la operación.
      */
     @Override
-    public void acceptClientSocketConnections() throws ServerOperationException, IOException {
+    public void acceptClientConnections() throws ServerOperationException, IOException {
         while (isServerRunning()) {
             try {
                 // Asigna un identificador único al cliente
                 Socket socket = serverSocket.accept();
-                ClientSocket clientSocket = new ClientSocket(socket, clientIdGenerator.incrementAndGet());
+                ClientConnection clientConnection = new ClientConnection(socket, clientIdGenerator.incrementAndGet());
                 connectedClientsCount.incrementAndGet();
                 // Maneja el cliente en un hilo separado
                 threadPool.submit(() -> {
                     try {
-                        handleClientSocket(clientSocket);
+                        handleClientConnection(clientConnection);
                     } catch (ServerOperationException e) {
                         logger.error("Error al manejar el cliente: " + e.getMessage(), e);
                     } finally {
@@ -194,7 +194,7 @@ public abstract class ServerAbstract implements ServerInterface {
             } catch (IOException e) {
                 // Si el servidor sigue en ejecución, reporta el error
                 if (isServerRunning()) {
-                    logger.error("Error al aceptar conexión de cliente: " + e.getMessage(), e);
+                    logger.error("Error al aceptar una conexión de cliente: " + e.getMessage(), e);
                 }
                 throw e;
             }
@@ -208,7 +208,7 @@ public abstract class ServerAbstract implements ServerInterface {
      * @throws ServerOperationException si ocurre un error al obtener el conteo.
      */
     @Override
-    public int getConnectedClientSocketsCount() throws ServerOperationException {
+    public int getConnectedClientsCount() throws ServerOperationException {
         return connectedClientsCount.get();
     }
 
@@ -216,11 +216,11 @@ public abstract class ServerAbstract implements ServerInterface {
      * Método abstracto para manejar la conexión de un cliente.
      * Las subclases deben proporcionar la implementación específica.
      *
-     * @param clientSocket El cliente a manejar.
+     * @param clientConnection El cliente a manejar.
      * @throws ServerOperationException si ocurre un error al manejar el cliente.
      */
     @Override
-    public abstract void handleClientSocket(ClientSocket clientSocket) throws ServerOperationException;
+    public abstract void handleClientConnection(ClientConnection clientConnection) throws ServerOperationException;
 
     /**
      * Cierra los recursos del servidor.
