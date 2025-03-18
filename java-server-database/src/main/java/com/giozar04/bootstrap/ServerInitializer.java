@@ -32,23 +32,23 @@ public class ServerInitializer {
         );
         // Configurar los handlers del servidor
         server.registerHandler(
-                TransactionHandlers.MessageTypes.CREATE_TRANSACTION,
+                TransactionHandlers.TransactionMessageTypes.CREATE_TRANSACTION,
                 TransactionHandlers.createTransactionHandler(transactionService)
         );
         server.registerHandler(
-                TransactionHandlers.MessageTypes.GET_TRANSACTION,
+                TransactionHandlers.TransactionMessageTypes.GET_TRANSACTION,
                 TransactionHandlers.getTransactionHandler(transactionService)
         );
         server.registerHandler(
-                TransactionHandlers.MessageTypes.UPDATE_TRANSACTION,
+                TransactionHandlers.TransactionMessageTypes.UPDATE_TRANSACTION,
                 TransactionHandlers.updateTransactionHandler(transactionService)
         );
         server.registerHandler(
-                TransactionHandlers.MessageTypes.DELETE_TRANSACTION,
+                TransactionHandlers.TransactionMessageTypes.DELETE_TRANSACTION,
                 TransactionHandlers.deleteTransactionHandler(transactionService)
         );
         server.registerHandler(
-                TransactionHandlers.MessageTypes.GET_ALL_TRANSACTIONS,
+                TransactionHandlers.TransactionMessageTypes.GET_ALL_TRANSACTIONS,
                 TransactionHandlers.getAllTransactionsHandler(transactionService)
         );
 

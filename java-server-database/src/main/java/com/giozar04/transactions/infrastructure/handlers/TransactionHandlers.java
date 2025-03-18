@@ -23,7 +23,7 @@ public class TransactionHandlers {
     /**
      * Tipos de mensajes para operaciones de transacciones.
      */
-    public static final class MessageTypes {
+    public static final class TransactionMessageTypes {
         public static final String CREATE_TRANSACTION = "CREATE_TRANSACTION";
         public static final String GET_TRANSACTION = "GET_TRANSACTION";
         public static final String UPDATE_TRANSACTION = "UPDATE_TRANSACTION";
@@ -45,7 +45,7 @@ public class TransactionHandlers {
             @SuppressWarnings("unchecked")
             Map<String, Object> transactionData = (Map<String, Object>) message.getData("transaction");
             if (transactionData == null) {
-                return Message.createErrorMessage(MessageTypes.CREATE_TRANSACTION, 
+                return Message.createErrorMessage(TransactionMessageTypes.CREATE_TRANSACTION, 
                         "Datos de transacción no proporcionados");
             }
             
@@ -57,7 +57,7 @@ public class TransactionHandlers {
             
             // Crear mensaje de respuesta
             Message response = Message.createSuccessMessage(
-                    MessageTypes.CREATE_TRANSACTION, 
+                    TransactionMessageTypes.CREATE_TRANSACTION, 
                     "Transacción creada exitosamente");
             
             // Convertir la transacción creada a un mapa para incluirla en la respuesta
@@ -80,7 +80,7 @@ public class TransactionHandlers {
             // Extraer ID de la transacción del mensaje
             Long id = (Long) message.getData("id");
             if (id == null) {
-                return Message.createErrorMessage(MessageTypes.GET_TRANSACTION, 
+                return Message.createErrorMessage(TransactionMessageTypes.GET_TRANSACTION, 
                         "ID de transacción no proporcionado");
             }
             
@@ -89,7 +89,7 @@ public class TransactionHandlers {
             
             // Crear mensaje de respuesta
             Message response = Message.createSuccessMessage(
-                    MessageTypes.GET_TRANSACTION, 
+                    TransactionMessageTypes.GET_TRANSACTION, 
                     "Transacción obtenida exitosamente");
             
             // Convertir la transacción a un mapa para incluirla en la respuesta
@@ -112,7 +112,7 @@ public class TransactionHandlers {
             // Extraer ID de la transacción del mensaje
             Long id = (Long) message.getData("id");
             if (id == null) {
-                return Message.createErrorMessage(MessageTypes.UPDATE_TRANSACTION, 
+                return Message.createErrorMessage(TransactionMessageTypes.UPDATE_TRANSACTION, 
                         "ID de transacción no proporcionado");
             }
             
@@ -120,7 +120,7 @@ public class TransactionHandlers {
             @SuppressWarnings("unchecked")
             Map<String, Object> transactionData = (Map<String, Object>) message.getData("transaction");
             if (transactionData == null) {
-                return Message.createErrorMessage(MessageTypes.UPDATE_TRANSACTION, 
+                return Message.createErrorMessage(TransactionMessageTypes.UPDATE_TRANSACTION, 
                         "Datos de transacción no proporcionados");
             }
             
@@ -132,7 +132,7 @@ public class TransactionHandlers {
             
             // Crear mensaje de respuesta
             Message response = Message.createSuccessMessage(
-                    MessageTypes.UPDATE_TRANSACTION, 
+                    TransactionMessageTypes.UPDATE_TRANSACTION, 
                     "Transacción actualizada exitosamente");
             
             // Convertir la transacción actualizada a un mapa para incluirla en la respuesta
@@ -155,7 +155,7 @@ public class TransactionHandlers {
             // Extraer ID de la transacción del mensaje
             Long id = (Long) message.getData("id");
             if (id == null) {
-                return Message.createErrorMessage(MessageTypes.DELETE_TRANSACTION, 
+                return Message.createErrorMessage(TransactionMessageTypes.DELETE_TRANSACTION, 
                         "ID de transacción no proporcionado");
             }
             
@@ -164,7 +164,7 @@ public class TransactionHandlers {
             
             // Crear mensaje de respuesta
             return Message.createSuccessMessage(
-                    MessageTypes.DELETE_TRANSACTION, 
+                    TransactionMessageTypes.DELETE_TRANSACTION, 
                     "Transacción eliminada exitosamente");
         };
     }
@@ -185,7 +185,7 @@ public class TransactionHandlers {
             
             // Crear mensaje de respuesta
             Message response = Message.createSuccessMessage(
-                    MessageTypes.GET_ALL_TRANSACTIONS, 
+                    TransactionMessageTypes.GET_ALL_TRANSACTIONS, 
                     "Transacciones obtenidas exitosamente");
             
             // Convertir cada transacción a un mapa y añadirlas a una lista
